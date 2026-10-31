@@ -21,7 +21,7 @@ public class NotOnRecord {
         final int MAX_ERRORES      = 3;
         final int NUM_VISITANTES   = 5;   
         final int NUM_RESIDENTES   = 5;
-        final int NUM_PISTAS       = 4;
+        final int NUM_PISTAS       = 5;
         final int PUNTOS_ACIERTO   = 100;
         final int PENALIZACION     = 50;   
 
@@ -31,11 +31,11 @@ public class NotOnRecord {
 
         // Estado de la partida
         int puntos = 0;
-        int errores = 0;
-
+        int errores = 0;   
         // Visitante actual
         int posResidente, posConviviente;          // posición del residente del que cogemos datos (0 a NUM_RESIDENTES - 1) y saber si en el piso hay alguien más
         boolean esImpostor;        // si es impostor o no
+        boolean convivienteEnCasa; // indica si el conviviente está en casa
 
         // Control del menú
         int opcion;
@@ -53,13 +53,13 @@ public class NotOnRecord {
         String[] telefonos = new String[NUM_RESIDENTES];
 
         // ===================== ARRAYS: PISTAS ===========================
-        // Posiciones DE PISTAS: [0] nombre distinto, [1] piso incorrecto,
-        //                       [2] DNI Incorrecto, [3] teléfono sin respuesta
+        // Posiciones DE PISTAS: [0] nombre distinto, [1] piso incorrecto,  [2] DNI Incorrecto, [3] teléfono sin respuesta   
+        //                       [4] Residente realmente está en casa, [5] Residente no está en casa
 
         boolean[] pistaActiva      = new boolean[NUM_PISTAS];  // pistas que pone el programa
         boolean[] pistaDescubierta = new boolean[NUM_PISTAS];  // pistas que ha encontrado el jugador
         String[]  descripcionPistas = new String[NUM_PISTAS]; // texto que mostramos al jugador describiendo la pista
-
+        
         //ABECEDARIO --> nos servirá para , en el caso de que el DNI sea incorrecto, generar una letra mala
         String[] abecedario = {"A", "B", "C", "D", "E", "F", "H"};
 
@@ -98,9 +98,9 @@ public class NotOnRecord {
         telefonos[4] = "1010";
 
         //PISTAS
-        nombresCambiados[0] = "Julián Ramiez";
-        nombresCambiados[1] = "Carla Leal";
-        nombresCambiados[2] = "Soniia Doñoro";
+        nombresCambiados[0] = "Julian Ramirez";
+        nombresCambiados[1] = "karla Leal";
+        nombresCambiados[2] = "Sonio Doñoro";
         nombresCambiados[3] = "Fron Pardo";
         nombresCambiados[4] = "Cristian Casado";
 
@@ -108,170 +108,291 @@ public class NotOnRecord {
         descripcionPistas[1] = "El piso no coincide con el piso registrado";
         descripcionPistas[2] = "El DNI no coincide con el DNI del registro" ;
         descripcionPistas[3] = "No ha habido respuesta";
+        descripcionPistas[4] = "El conviviente indica que la persona está en casa";
 
-        //============JUEGO================
+        //============INTRO================
+        System.out.println("");
+        System.out.println("█   █  ███  █████     ███  █   █    ████  █████  ███   ███  ████  ████  \r\n" + //
+                        "██  █ █   █   █      █   █ ██  █    █   █ █     █     █   █ █   █ █   █ \r\n" + //
+                        "█ █ █ █   █   █      █   █ █ █ █    ████  ████  █     █   █ ████  █   █ \r\n" + //
+                        "█  ██ █   █   █      █   █ █  ██    █  █  █     █     █   █ █  █  █   █ \r\n" + //
+                        "█   █  ███    █       ███  █   █    █   █ █████  ███   ███  █   █ ████  ");
+                     
+        int opcionPrincipal;
 
-        for (int contador = 0; contador < NUM_RESIDENTES; contador++) {
+        do {
+            System.out.println(NEGRITA + AMARILLO + "========== NOT ON RECORD ==========" + RESET);
+            System.out.println("1. Empezar partida");
+            System.out.println("2. Cómo jugar");
+            System.out.println("3. Salir del juego");
+            System.out.print(NEGRITA + "Opción: " + RESET);
+            opcionPrincipal = Integer.parseInt(leer.readLine());
 
-            // GENERAR UN VISITANTE E INDICAR SI ES IMPOSTOR O NO
-            posResidente = (int) (Math.random() * NUM_RESIDENTES);
-            esImpostor = Math.random() < 0.50; // si sale un num menor que 0.5 será impostor
+            switch (opcionPrincipal) {
+                case 1: {
+                    puntos = 0;
+                    errores = 0;
+                    boolean partidaTerminada = false; //pasa a true si perdemos (3 errores) o abandonas
 
-            // PISTAS: reiniciamos para que no queden restos
-            for (int i = 0; i < NUM_PISTAS; i++) {
-                pistaActiva[i] = false;
-                pistaDescubierta[i] = false;
-            }
+                    //============JUEGO================
 
-            //RELLENAMOS LOS DATOS QUE EL VISITANTE NOS VA A DAR, LO COPIAMOS DEL REGISTRO DE LA POSICION DE RESIDENTE QUE HEMOS RECOGIDO ANTES
-            //NOTA: [0] es nombre, [1] es piso y [2] es DNI
-            datosDeclarados[0] = nombres[posResidente];
-            datosDeclarados[1] = pisos[posResidente];
-            datosDeclarados[2] = dnis[posResidente];
-
-            //EN EL CASO DE QUE SEA IMPOSTOR, UNO DE ESTOS 3 SE ALTERARÁ O NO , EN EL ÚLTIMO CASO OBLIGO A INVESTIGAR MÁS
-            if (esImpostor) {
-                switch ((int) (Math.random() * 4)) { //esto lo que hace es dar 0, 1 , 2 o 3 , que son nuetros 3 datos que podemos alterar o la posibilidad de no alterar
-                    case 0:
-                        datosDeclarados[0] = nombresCambiados[posResidente];
-                        pistaActiva[0] = true;
-                        break;
-
-                    case 1:
-                        int pisoRandom;
-                        do {
-                            pisoRandom = (int) (Math.random() * 4); //para que salga un piso entre 0 y 3
-
-                        } while (pisoRandom == Integer.parseInt(datosDeclarados[1]));
-
-                        datosDeclarados[1] = String.valueOf(pisoRandom);
-                        pistaActiva[1] = true;
-                        break;
-                        
-                    case 2:
-                        int posicionLetraRandom = (int)(Math.random()*7);
-                        datosDeclarados[2] = abecedario[posicionLetraRandom]+ dnis[posResidente];
-                        pistaActiva[2] = true;
-                        break;
-
-                    case 3:
-                    posicionLetraRandom = (int)(Math.random()*7);
-                    datosDeclarados[2] = abecedario[posicionLetraRandom]+ dnis[posResidente];
-                    pistaActiva[3] = true;
-                    break;
-
-                }
-                
-            }
-
-            //MOSTRAMOS POR PANTALLA
-            System.out.println(NEGRITA +"TURNO "+ (contador+1) +RESET);
-            System.out.println(NEGRITA + AZUL +"VISITANTE: "+ RESET+ "Buenos días señor portero, me abre por favor? "+ RESET);
-            System.out.println(MAGENTA);
-            switch ((int) (Math.random() * 2)) { //el visitante puede entregarnos el documento o no
-                case 0:
-                    System.out.printf("%s %n", "*El visitante le entrega su documento* ");
-                    System.out.println(AZUL+ datosDeclarados[0] +" | "+ datosDeclarados[1] +" | "+ datosDeclarados[2] + RESET);
-
-                    break;
-
-                case 1:
-                    System.out.printf("\s \n"+ "*El visitante no le entrega nada*");
-                    break;
-            }
-            System.out.println(RESET);
-            do {
-                System.out.println(NEGRITA + AZUL+ "------------------------------------+"+ RESET);
-                System.out.println(NEGRITA + "Opciones:                           |");
-                System.out.printf("%-2s %-32s%n", "1.", "Consultar registro de residentes |");
-                System.out.printf("%-2s %-32s | %n", "2.", "Pedir documento");
-                System.out.printf("%-2s %-32s | %n", "3.", "Hacer una pregunta");
-                System.out.printf("%-2s %-32s | %n", "4.", "Llamar al apartamento");
-                System.out.printf("%-2s %-32s | %n", "5.", "Apuntar pista");
-                System.out.printf("%-2s %-32s | %n", "6.", "Tomar decisión");
-                System.out.printf("%-2s %-32s | %n", "0.", "Abandonar jornada");
-                System.out.println(NEGRITA + AZUL+ "------------------------------------+"+ RESET);
-                System.out.print(NEGRITA +"Opción: ");
-                opcion = Integer.parseInt(leer.readLine());
-
-                System.out.print(RESET);
-
-                if (opcion!=0) {
-                    switch (opcion) {
-                            case 1:
-                                System.out.println(NEGRITA+ AMARILLO+ "=============REGISTRO DE RESIDENTES================"+ RESET);
-                                System.out.print(NEGRITA);
-                                System.out.printf("%-20s| %-5s| %-10s| %-5s |%n", "NOMBRE", "PISO", "DNI", "TELÉFONO");
-                                System.out.println("---------------------------------------------------");
-                                System.out.print(RESET);
-                                for (int i = 0; i < NUM_RESIDENTES; i++) {
-                                System.out.printf("%-20s| %-5s| %-10s| %-8s |%n", nombres[i], pisos[i], dnis[i], telefonos[i]);
-
-                                }
-                                System.out.print(NEGRITA);
-                                System.out.println("---------------------------------------------------");
-
-                                break;
-                        
-                            case 2:
-                                System.out.println(NEGRITA+ CIAN+ "PORTERO: "+ RESET +"Por favor, entrégueme su documento");
-                                
-                                System.out.println(NEGRITA+ AZUL+ "VISITANTE: "+RESET +"Perdona, aquí tiene ");
-                                System.out.println(AZUL+ datosDeclarados[0] +" | "+ datosDeclarados[1] +" | "+ datosDeclarados[2] + RESET);
-
-                                break;
-                            case 3:
-                                break;
-                            case 4:
-                                System.out.println("Escriba el número de teléfono del apartamento: ");
-                                numeroTelefono = leer.readLine();
-
-                                if (numeroTelefono.equals("1010")) {
-                                System.out.println("Llamando...");
-
-                                    switch ((int)(Math.random()*3)) { //1--> No contesta nadie 2--> Contesta alguien
-                                        
-                                    }
-                                    
-                                }else if (numeroTelefono.equals("2020")) {
-                                    System.out.println("Llamando...");
-                                    switch ((int)(Math.random()*3)) { //1--> No contesta nadie 2--> Contesta alguien
-
-                                        case 1:
-                                            System.out.println("Sin respuesta");
-                                            break;
-                                        case 2:
-                                            System.out.println(AZUL + NEGRITA + nombres[2] + RESET +" : ¿ Diga ?");
-                                            System.out.println(CIAN + NEGRITA + "PORTERO: "+ RESET + "¿ Está "+ datosDeclarados[0] + " en casa ?");
-                                            if (esImpostor) {
-                                                System.out.println(AZUL + NEGRITA + nombres[2] +": " + RESET +": Sí, aquí está.");
-                                            } else {
-                                                System.out.println(AZUL + NEGRITA + nombres[2] +": " + RESET +"No, ha salido.");
-                                            }
-                                            break;
-                                    
-                                    }
-                                }else if (numeroTelefono.equals("3030")) { //1--> COntesta la única persona que vive aquí 2--> No contesta nadie
-                                System.out.println("Llamando...");
-                                    
-                                }
-
-                                break;
-                            case 5:
-
-                                break;
-                            case 6:
-                                
-                                break;
-                        }
                     
+                    for (int contador = 0; contador < NUM_RESIDENTES; contador++) {
+
+                        // GENERAR UN VISITANTE E INDICAR SI ES IMPOSTOR O NO
+                        posResidente = (int) (Math.random() * NUM_RESIDENTES);
+                        esImpostor = Math.random() < 0.50; // si sale un num menor que 0.5 será impostor
+
+                        // PISTAS Y CONDICIONES: reiniciamos para que no queden restos
+                        for (int i = 0; i < NUM_PISTAS; i++) {
+                            pistaActiva[i] = false;
+                            pistaDescubierta[i] = false;
+                        }
+                        boolean llamadaRealizada = false;
+
+                        //RELLENAMOS LOS DATOS QUE EL VISITANTE NOS VA A DAR, LO COPIAMOS DEL REGISTRO DE LA POSICION DE RESIDENTE QUE HEMOS RECOGIDO ANTES
+                        //NOTA: [0] es nombre, [1] es piso y [2] es DNI
+                        datosDeclarados[0] = nombres[posResidente];
+                        datosDeclarados[1] = pisos[posResidente];
+                        datosDeclarados[2] = dnis[posResidente];
+
+                        //buscamos al otro residente del mismo piso y generamos si estará en casa o no
+                        posConviviente = -1; // -1 significa nadie: ninguna posición de un array puede valer -1. Suponemos que vive solo porque hay casos así
+                        for (int i = 0; i < NUM_RESIDENTES; i++) {
+                             if (pisos[i].equals(pisos[posResidente]) && i != posResidente) { //con la segunda parte nos aseguramos de no coger al propio visitante
+                                posConviviente = i;
+                            }
+                        }
+                        convivienteEnCasa = posConviviente != -1 && Math.random() < 0.5; //si no vive solo y el num random es menor q 0.5 hay conviviente
+
+
+                        //EN EL CASO DE QUE SEA IMPOSTOR, UNO DE ESTOS 3 SE ALTERARÁ O NO , EN EL ÚLTIMO CASO OBLIGO A INVESTIGAR MÁS
+                        if (esImpostor) {
+                            int tipoImpostor = (int) (Math.random()*4);
+
+                             //un impostor puede vivir solo, por lo que la llamada puede no ayudar, hacemos que tenga una pista si o si
+                            if (tipoImpostor==3 && posConviviente==-1) { 
+                                tipoImpostor = (int)(Math.random()*3);
+                            }
+
+                            switch (tipoImpostor) { //esto lo que hace es dar 0, 1 , 2 o 3 , que son nuestros 3 datos que podemos alterar y la posibilidad de no alterar
+
+                                case 0:
+                                    datosDeclarados[0] = nombresCambiados[posResidente];
+                                    pistaActiva[0] = true;
+                                    break;
+
+                                case 1:
+                                    int pisoRandom;
+                                    do {
+                                        pisoRandom = (int) (Math.random() * 4); //para que salga un piso entre 0 y 3
+
+                                    } while (pisoRandom == Integer.parseInt(datosDeclarados[1]));
+
+                                    datosDeclarados[1] = String.valueOf(pisoRandom);
+                                    pistaActiva[1] = true;
+                                break;
+                                    
+                                case 2:
+                                    int posicionLetraRandom = (int)(Math.random()*7);
+                                    datosDeclarados[2] = abecedario[posicionLetraRandom]+ dnis[posResidente];
+                                    pistaActiva[2] = true;
+                                    break;
+
+                                case 3:
+                                    //no alteramos nada
+                                    //conviviente siempre en casa para tener pistas
+                                    convivienteEnCasa = true;
+                                    pistaActiva[4]=true;
+                                break;
+
+                            }
+                        }                            
+                        
+                        if (!partidaTerminada) {
+                            
+                        
+                            //MOSTRAMOS POR PANTALLA
+                            System.out.println(NEGRITA +"TURNO "+ (contador+1) +RESET);
+                            System.out.println(NEGRITA + AZUL +"VISITANTE: "+ RESET+ "Buenos días señor portero, me abre por favor? "+ RESET);
+                            System.out.println(MAGENTA);
+                            switch ((int) (Math.random() * 2)) { //el visitante puede entregarnos el documento o no
+                                case 0:
+                                    System.out.printf("%s %n", "*El visitante le entrega su documento* ");
+                                    System.out.println(AZUL+ datosDeclarados[0] +" | "+ datosDeclarados[1] +" | "+ datosDeclarados[2] + RESET);
+
+                                    break;
+
+                                case 1:
+                                    System.out.printf("\s \n"+ "*El visitante no le entrega nada*");
+                                    break;
+                            }
+                            System.out.println(RESET);
+                            do {
+                                System.out.println(NEGRITA + AZUL+ "------------------------------------+"+ RESET);
+                                System.out.println(NEGRITA + "Opciones:                           |");
+                                System.out.printf("%-2s %-32s%n", "1.", "Consultar registro de residentes |");
+                                System.out.printf("%-2s %-32s | %n", "2.", "Pedir documento");
+                                System.out.printf("%-2s %-32s | %n", "3.", "Hacer una pregunta");
+                                System.out.printf("%-2s %-32s | %n", "4.", "Llamar al apartamento");
+                                System.out.printf("%-2s %-32s | %n", "5.", "Apuntar pista");
+                                System.out.printf("%-2s %-32s | %n", "6.", "Tomar decisión");
+                                System.out.printf("%-2s %-32s | %n", "0.", "Abandonar jornada");
+                                System.out.println(NEGRITA + AZUL+ "------------------------------------+"+ RESET);
+                                System.out.print(NEGRITA +"Opción: ");
+                                opcion = Integer.parseInt(leer.readLine());
+
+                                System.out.print(RESET);
+
+                                if (opcion!=0 && opcion!= 6) {
+                                    switch (opcion) {
+                                            case 1:
+                                                System.out.println(NEGRITA+ AMARILLO+ "=============REGISTRO DE RESIDENTES================"+ RESET);
+                                                System.out.print(NEGRITA);
+                                                System.out.printf("%-20s| %-5s| %-10s| %-5s |%n", "NOMBRE", "PISO", "DNI", "TELÉFONO");
+                                                System.out.println("---------------------------------------------------");
+                                                System.out.print(RESET);
+                                                for (int i = 0; i < NUM_RESIDENTES; i++) {
+                                                System.out.printf("%-20s| %-5s| %-10s| %-8s |%n", nombres[i], pisos[i], dnis[i], telefonos[i]);
+
+                                                }
+                                                System.out.print(NEGRITA);
+                                                System.out.println("---------------------------------------------------");
+                                                System.out.print(RESET);
+                                                break;
+                                        
+                                            case 2:
+                                                System.out.println(NEGRITA+ CIAN+ "PORTERO: "+ RESET +"Por favor, entrégueme su documento");
+                                                
+                                                System.out.println(NEGRITA+ AZUL+ "VISITANTE: "+RESET +"Perdona, aquí tiene ");
+                                                System.out.println(AZUL+ datosDeclarados[0] +" | "+ datosDeclarados[1] +" | "+ datosDeclarados[2] + RESET);
+
+                                                break;
+                                            case 3:
+                                                break;
+                                            case 4:
+                                                if (llamadaRealizada==false) {
+                                                
+                                                    System.out.println("Escriba el número de teléfono del apartamento: ");
+                                                    numeroTelefono = leer.readLine();
+                                                    System.out.println("Llamando...");
+
+                                                    llamadaRealizada = true;
+
+                                                    if (numeroTelefono.equals(telefonos[posResidente]) && convivienteEnCasa) {
+                                                    System.out.println(AZUL + NEGRITA + nombres[posConviviente] + ": " + RESET + "¿Diga?");
+                                                    System.out.println(CIAN + NEGRITA + "PORTERO: " + RESET + "¿Está " + nombres[posResidente] + " en casa?");
+                                                    
+                                                        if (esImpostor) {
+                                                            System.out.println(AZUL + NEGRITA + nombres[posConviviente] + ": " + RESET + "Sí, aquí está.");
+                                                            pistaDescubierta[4]= true;
+                                                            System.out.println(ROJO + descripcionPistas[4].toUpperCase() + RESET);
+                                                        } else {
+                                                            System.out.println(AZUL + NEGRITA + nombres[posConviviente] + ": " + RESET + "No, ha salido.");
+                                                        }
+                                                    } else {
+                                                        System.out.println("Sin respuesta");
+                                                    }
+                                                } else {
+                                                    System.out.println("Ya ha llamado");
+                                                }
+                                            break;
+
+                                            case 5:
+
+                                                break;
+
+                                        }
+                                    
+                                }
+
+                            } while (opcion != 0 && opcion != 6);
+
+                            if (opcion==6) {
+
+                                String decision;
+                                
+                                do {
+                                    
+                                    System.out.println("OPCIÓN A: Dejar pasar");
+                                    System.out.println("OPCIÓN B: Rechazar entrada");
+                                    System.out.println("Seleccione una opción: ");
+                                    decision = leer.readLine();
+                                    if (!decision.equalsIgnoreCase("A") && !decision.equalsIgnoreCase("B")) {
+                                        System.out.println(ROJO+ NEGRITA+ "Tome una decisión válida"+ RESET);
+                                    }
+
+                                } while (!decision.equalsIgnoreCase("A") && !decision.equalsIgnoreCase("B"));
+
+                                if (decision.equalsIgnoreCase("A")) { //le da igual mayusc. que minusc.
+                                    System.out.println("Has dejado pasar al visitante");
+                                    if (esImpostor) {
+                                        System.out.println(ROJO+ "Has fallado, "+ RESET+ "era un impostor");
+                                        errores = errores + 1;
+                                        puntos = puntos - PENALIZACION * errores; //penalización creciente
+                                        System.out.println(ROJO+ "Errores: "+ errores +"/3"+ RESET);
+                                        if (errores==3) {
+                                            System.out.println(ROJO+"HAS MUERTO");
+                                            opcion = 6;
+                                        }
+                                    }else {
+                                        System.out.println(VERDE+ "Has acertado, "+ RESET +"era un residente");
+                                        puntos = puntos + PUNTOS_ACIERTO;
+                                    }
+                                }else if (decision.equalsIgnoreCase("B")) {
+                                    if (esImpostor) {
+                                        System.out.println(VERDE+ "Has acertado, "+ RESET+ "era un impostor");
+                                        puntos = puntos + PUNTOS_ACIERTO;
+                                    }else {
+                                        System.out.println(ROJO+ "Has fallado, "+ RESET +"era un residente");
+                                        errores = errores + 1;
+                                        puntos = puntos - PENALIZACION * errores;
+                                        System.out.println(ROJO+ "Errores: "+ errores +"/3"+ RESET);
+                                    }
+
+                                    if (errores==MAX_ERRORES) { //acaba partida
+                                        System.out.println(ROJO+"HAS MUERTO"+RESET);
+                                        partidaTerminada = true;
+                                    }
+                                    
+                                }
+                                
+                            }else if (opcion == 0) {
+                                System.out.println("Has abandonado la jornada");
+                                partidaTerminada = true; //corta el bucle de turnos
+                            }
+
+                        }
+                }
+
+                    //RESUMEN CON ESTADISTICAS
+                    System.out.println(NEGRITA+AMARILLO+ "========== FIN DE LA JORNADA =========="+ RESET);
+                    
+                    System.out.println("Puntos: "+ puntos);
+                    System.out.println("Errores: "+ errores +"/"+ MAX_ERRORES);
+                    if (errores==MAX_ERRORES) {
+                        System.out.println("GAME OVER: Has cometido demasiados errores"+ RESET);
+                    }else if (puntos>=400) {
+                       System.out.println(VERDE+ "Valoración: EXPERTO"+ RESET); 
+                    }else if (puntos>=200) {
+                        System.out.println(AZUL+ "Valoración: PROFESIONAL"+ RESET);
+                    }else {
+                        System.out.println(AMARILLO+ "Valoración: NOVATO"+ RESET);
+                    }
+
+                    break;
+                }
+                case 2:
+                    System.out.println("Investiga a los visitantes, reúne pistas y decide si son impostores.");
+                        break;
+                case 3:
+                    System.out.println("Saliendo del juego.");
+                        break;
+                default:
+                    System.out.println("Opción no válida.");
+                    break;
             }
-
-            } while (opcion != 0);
-
-                
-
-        }
+        } while (opcionPrincipal != 3);
 
     }
 }
