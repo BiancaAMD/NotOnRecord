@@ -19,31 +19,33 @@ public class NotOnRecord {
 
         // ========================== CONSTANTES ==========================
         final int MAX_ERRORES      = 3;
-        final int NUM_VISITANTES   = 5;   
         final int NUM_RESIDENTES   = 5;
-        final int NUM_PISTAS       = 5;
         final int PUNTOS_ACIERTO   = 100;
-        final int PENALIZACION     = 50;   
+        final int PENALIZACION     = 50;  
 
         // ========================== VARIABLES ===========================
         //empleados por el usuario
         String numeroTelefono;
 
         // Estado de la partida
-        int puntos = 0;
-        int errores = 0;   
+        int puntos;
+        int errores;
+        int aciertos;
+
         // Visitante actual
         int posResidente, posConviviente;          // posición del residente del que cogemos datos (0 a NUM_RESIDENTES - 1) y saber si en el piso hay alguien más
         boolean esImpostor;        // si es impostor o no
         boolean convivienteEnCasa; // indica si el conviviente está en casa
 
         // Control del menú
-        int opcion;
-        boolean decidido;          // true cuando se da el veredicto y acaba el turno
+        String opcion;
+        boolean decidido;         // true cuando se da el veredicto y acaba el turno
 
-        // Contadores para valorar la decisión
-        int pistasExistentes;
-        int pistasEncontradas;
+        //=========DUELO============
+        int saludPortero, saludImpostor, dano, refuerzosRestantes;
+        String accionDuelo;
+        final int SALUD_INICIAL = 100;
+        final int DANO_MAX = 50; //daño max que se puede hacer
 
         // ===================== ARRAYS: REGISTRO =========================
         // Arrays paralelos: la misma posición describe al mismo residente
@@ -52,13 +54,6 @@ public class NotOnRecord {
         String[] dnis      = new String[NUM_RESIDENTES];
         String[] telefonos = new String[NUM_RESIDENTES];
 
-        // ===================== ARRAYS: PISTAS ===========================
-        // Posiciones DE PISTAS: [0] nombre distinto, [1] piso incorrecto,  [2] DNI Incorrecto, [3] teléfono sin respuesta   
-        //                       [4] Residente realmente está en casa, [5] Residente no está en casa
-
-        boolean[] pistaActiva      = new boolean[NUM_PISTAS];  // pistas que pone el programa
-        boolean[] pistaDescubierta = new boolean[NUM_PISTAS];  // pistas que ha encontrado el jugador
-        String[]  descripcionPistas = new String[NUM_PISTAS]; // texto que mostramos al jugador describiendo la pista
         
         //ABECEDARIO --> nos servirá para , en el caso de que el DNI sea incorrecto, generar una letra mala
         String[] abecedario = {"A", "B", "C", "D", "E", "F", "H"};
@@ -66,7 +61,7 @@ public class NotOnRecord {
         // ================= ARRAYS: DATOS DEL VISITANTE ==================
         // Posiciones: [0] nombre, [1] piso, [2] DNI
         String[] datosDeclarados = new String[3]; //array con el que tomamos datos de los arrays paralelos, con esto formamos el documento del visitante
-        String[] nombresCambiados = new String[NUM_RESIDENTES]; //esta nos ayuda a cambiar los nombres en el caso de que sea un impostor y la pista sea el nombre
+        String[] nombresCambiados = new String[NUM_RESIDENTES]; //esta nos ayuda a cambiar los nombres en el caso de que sea un impostor 
 
         //cuerpo del programa
 
@@ -97,18 +92,13 @@ public class NotOnRecord {
         dnis[4] = "K34424F";
         telefonos[4] = "1010";
 
-        //PISTAS
+        //NOMBRES COMO PISTAS
         nombresCambiados[0] = "Julian Ramirez";
         nombresCambiados[1] = "karla Leal";
         nombresCambiados[2] = "Sonio Doñoro";
         nombresCambiados[3] = "Fron Pardo";
         nombresCambiados[4] = "Cristian Casado";
 
-        descripcionPistas[0] = "El nombre no coincide con el nombre registrado";
-        descripcionPistas[1] = "El piso no coincide con el piso registrado";
-        descripcionPistas[2] = "El DNI no coincide con el DNI del registro" ;
-        descripcionPistas[3] = "No ha habido respuesta";
-        descripcionPistas[4] = "El conviviente indica que la persona está en casa";
 
         //============INTRO================
         System.out.println("");
@@ -118,37 +108,39 @@ public class NotOnRecord {
                         "█  ██ █   █   █      █   █ █  ██    █  █  █     █     █   █ █  █  █   █ \r\n" + //
                         "█   █  ███    █       ███  █   █    █   █ █████  ███   ███  █   █ ████  ");
                      
-        int opcionPrincipal;
+        String opcionPrincipal;
 
         do {
-            System.out.println(NEGRITA + AMARILLO + "========== NOT ON RECORD ==========" + RESET);
+            System.out.println("");
+            System.out.println(NEGRITA + AMARILLO + "========== MENÚ PRINCIPAL ==========" + RESET );
             System.out.println("1. Empezar partida");
             System.out.println("2. Cómo jugar");
             System.out.println("3. Salir del juego");
             System.out.print(NEGRITA + "Opción: " + RESET);
-            opcionPrincipal = Integer.parseInt(leer.readLine());
+            opcionPrincipal = leer.readLine();
 
             switch (opcionPrincipal) {
-                case 1: {
+                case "1": {
                     puntos = 0;
                     errores = 0;
+                    aciertos = 0;
+                    saludPortero = SALUD_INICIAL;
+                    refuerzosRestantes = 2;
                     boolean partidaTerminada = false; //pasa a true si perdemos (3 errores) o abandonas
+                    
 
                     //============JUEGO================
 
                     
-                    for (int contador = 0; contador < NUM_RESIDENTES; contador++) {
+                    for (int contador = 0; contador < NUM_RESIDENTES && !partidaTerminada; contador++) {
 
                         // GENERAR UN VISITANTE E INDICAR SI ES IMPOSTOR O NO
                         posResidente = (int) (Math.random() * NUM_RESIDENTES);
                         esImpostor = Math.random() < 0.50; // si sale un num menor que 0.5 será impostor
 
-                        // PISTAS Y CONDICIONES: reiniciamos para que no queden restos
-                        for (int i = 0; i < NUM_PISTAS; i++) {
-                            pistaActiva[i] = false;
-                            pistaDescubierta[i] = false;
-                        }
-                        boolean llamadaRealizada = false;
+                        //CONDICIONES: reiniciamos para que no queden restos
+                        boolean llamadaRealizada = false;    
+                        decidido = false;                    
 
                         //RELLENAMOS LOS DATOS QUE EL VISITANTE NOS VA A DAR, LO COPIAMOS DEL REGISTRO DE LA POSICION DE RESIDENTE QUE HEMOS RECOGIDO ANTES
                         //NOTA: [0] es nombre, [1] es piso y [2] es DNI
@@ -166,20 +158,19 @@ public class NotOnRecord {
                         convivienteEnCasa = posConviviente != -1 && Math.random() < 0.5; //si no vive solo y el num random es menor q 0.5 hay conviviente
 
 
-                        //EN EL CASO DE QUE SEA IMPOSTOR, UNO DE ESTOS 3 SE ALTERARÁ O NO , EN EL ÚLTIMO CASO OBLIGO A INVESTIGAR MÁS
+                        //EN EL CASO DE QUE SEA IMPOSTOR: uno de los tres datos se altera o no
                         if (esImpostor) {
-                            int tipoImpostor = (int) (Math.random()*4);
+                            int tipoImpostor = (int) (Math.random()*4); //esto lo que hace es dar 0, 1 , 2 o 3 , que son nuestros 3 datos que podemos alterar y la posibilidad de no alterar
 
                              //un impostor puede vivir solo, por lo que la llamada puede no ayudar, hacemos que tenga una pista si o si
                             if (tipoImpostor==3 && posConviviente==-1) { 
                                 tipoImpostor = (int)(Math.random()*3);
                             }
 
-                            switch (tipoImpostor) { //esto lo que hace es dar 0, 1 , 2 o 3 , que son nuestros 3 datos que podemos alterar y la posibilidad de no alterar
+                            switch (tipoImpostor) { 
 
                                 case 0:
                                     datosDeclarados[0] = nombresCambiados[posResidente];
-                                    pistaActiva[0] = true;
                                     break;
 
                                 case 1:
@@ -190,29 +181,25 @@ public class NotOnRecord {
                                     } while (pisoRandom == Integer.parseInt(datosDeclarados[1]));
 
                                     datosDeclarados[1] = String.valueOf(pisoRandom);
-                                    pistaActiva[1] = true;
                                 break;
                                     
                                 case 2:
                                     int posicionLetraRandom = (int)(Math.random()*7);
                                     datosDeclarados[2] = abecedario[posicionLetraRandom]+ dnis[posResidente];
-                                    pistaActiva[2] = true;
                                     break;
 
                                 case 3:
                                     //no alteramos nada
                                     //conviviente siempre en casa para tener pistas
                                     convivienteEnCasa = true;
-                                    pistaActiva[4]=true;
                                 break;
 
                             }
                         }                            
                         
-                        if (!partidaTerminada) {
-                            
-                        
-                            //MOSTRAMOS POR PANTALLA
+         
+                            //==============TURNOS==================
+                            System.out.println("");
                             System.out.println(NEGRITA +"TURNO "+ (contador+1) +RESET);
                             System.out.println(NEGRITA + AZUL +"VISITANTE: "+ RESET+ "Buenos días señor portero, me abre por favor? "+ RESET);
                             System.out.println(MAGENTA);
@@ -233,20 +220,18 @@ public class NotOnRecord {
                                 System.out.println(NEGRITA + "Opciones:                           |");
                                 System.out.printf("%-2s %-32s%n", "1.", "Consultar registro de residentes |");
                                 System.out.printf("%-2s %-32s | %n", "2.", "Pedir documento");
-                                System.out.printf("%-2s %-32s | %n", "3.", "Hacer una pregunta");
-                                System.out.printf("%-2s %-32s | %n", "4.", "Llamar al apartamento");
-                                System.out.printf("%-2s %-32s | %n", "5.", "Apuntar pista");
-                                System.out.printf("%-2s %-32s | %n", "6.", "Tomar decisión");
+                                System.out.printf("%-2s %-32s | %n", "3.", "Llamar al apartamento");
+                                System.out.printf("%-2s %-32s | %n", "4.", "Tomar decisión");
                                 System.out.printf("%-2s %-32s | %n", "0.", "Abandonar jornada");
                                 System.out.println(NEGRITA + AZUL+ "------------------------------------+"+ RESET);
                                 System.out.print(NEGRITA +"Opción: ");
-                                opcion = Integer.parseInt(leer.readLine());
+                                opcion = leer.readLine();
 
                                 System.out.print(RESET);
 
-                                if (opcion!=0 && opcion!= 6) {
+                                if (!opcion.equals("0")) {
                                     switch (opcion) {
-                                            case 1:
+                                            case "1":
                                                 System.out.println(NEGRITA+ AMARILLO+ "=============REGISTRO DE RESIDENTES================"+ RESET);
                                                 System.out.print(NEGRITA);
                                                 System.out.printf("%-20s| %-5s| %-10s| %-5s |%n", "NOMBRE", "PISO", "DNI", "TELÉFONO");
@@ -261,16 +246,14 @@ public class NotOnRecord {
                                                 System.out.print(RESET);
                                                 break;
                                         
-                                            case 2:
+                                            case "2":
                                                 System.out.println(NEGRITA+ CIAN+ "PORTERO: "+ RESET +"Por favor, entrégueme su documento");
                                                 
                                                 System.out.println(NEGRITA+ AZUL+ "VISITANTE: "+RESET +"Perdona, aquí tiene ");
                                                 System.out.println(AZUL+ datosDeclarados[0] +" | "+ datosDeclarados[1] +" | "+ datosDeclarados[2] + RESET);
 
                                                 break;
-                                            case 3:
-                                                break;
-                                            case 4:
+                                            case "3":
                                                 if (llamadaRealizada==false) {
                                                 
                                                     System.out.println("Escriba el número de teléfono del apartamento: ");
@@ -285,8 +268,6 @@ public class NotOnRecord {
                                                     
                                                         if (esImpostor) {
                                                             System.out.println(AZUL + NEGRITA + nombres[posConviviente] + ": " + RESET + "Sí, aquí está.");
-                                                            pistaDescubierta[4]= true;
-                                                            System.out.println(ROJO + descripcionPistas[4].toUpperCase() + RESET);
                                                         } else {
                                                             System.out.println(AZUL + NEGRITA + nombres[posConviviente] + ": " + RESET + "No, ha salido.");
                                                         }
@@ -297,72 +278,148 @@ public class NotOnRecord {
                                                     System.out.println("Ya ha llamado");
                                                 }
                                             break;
+                                            case "4":
+                                            String decision;
+                                
+                                                do {
+                                                    
+                                                    System.out.println("OPCIÓN A: Dejar pasar");
+                                                    System.out.println("OPCIÓN B: Rechazar entrada");
+                                                    System.out.println("Seleccione una opción: ");
+                                                    decision = leer.readLine();
+                                                    decidido = true;
+                                                    if (!decision.equalsIgnoreCase("A") && !decision.equalsIgnoreCase("B")) {
+                                                        System.out.println(ROJO+ NEGRITA+ "Tome una decisión válida"+ RESET);
+                                                    }
 
-                                            case 5:
+                                                } while (!decision.equalsIgnoreCase("A") && !decision.equalsIgnoreCase("B"));
 
-                                                break;
+                                                if (decision.equalsIgnoreCase("A")) { //le da igual mayusc. que minusc.
+                                                    System.out.println(CIAN+ NEGRITA+ "PORTERO: "+ RESET+ "puede pasar.");
+                                                    System.out.println(MAGENTA+ "*has dejado pasar al visitante"+ RESET);
+                                                    if (esImpostor) {
+                                                        System.out.println(ROJO+ "Has fallado, "+ RESET+ "era un impostor");
+                                                        errores = errores + 1;
+                                                        puntos = puntos - PENALIZACION * errores; //penalización creciente
+                                                        System.out.println(ROJO+ "Errores: "+ errores +"/"+ MAX_ERRORES+ RESET);
 
+                                                    }else {
+                                                        System.out.println(VERDE+ "Has acertado, "+ RESET +"era un residente");
+                                                        aciertos = aciertos + 1;
+                                                        puntos = puntos + PUNTOS_ACIERTO;
+                                                    }
+
+                                                }else if (decision.equalsIgnoreCase("B")) {
+                                                   System.out.println(CIAN + NEGRITA +"PORTERO: "+ RESET +"eres un impostor!!");
+
+                                                    if (esImpostor) {
+                                                        switch ((int)(Math.random()*2)) {
+                                                            case 0: //huye
+                                                                System.out.println(MAGENTA+ "*EL IMPOSTOR HA SALIDO CORRIENDO*");
+                                                                aciertos = aciertos + 1;
+                                                                puntos = puntos + PUNTOS_ACIERTO;
+                                                                decidido = true;
+                                                                break;
+                                                        
+                                                            case 1: //ataca
+                                                                saludImpostor = SALUD_INICIAL;
+
+                                                                System.out.println(ROJO+NEGRITA +"*EL IMPOSTOR TE ESTÁ ATACANDO*"+ RESET);
+                                                                while (saludPortero>0 && saludImpostor>0) {
+                                                                    boolean bloqueando = false;
+                                                                    System.out.println("Tu salud: "+ saludPortero + " | Salud del impostor: " + saludImpostor);
+                                                                    System.out.println("1. Atacar");
+                                                                    System.out.println("2. Bloquear ataque");
+                                                                    System.out.println("3. Pedir refuerzos ("+ refuerzosRestantes +")");
+                                                                    System.out.print("Acción: ");
+                                                                    accionDuelo = leer.readLine();
+
+                                                                    switch (accionDuelo) {
+                                                                        //nuestro turno
+                                                                        case "1":
+                                                                            dano = (int) (Math.random()*DANO_MAX) + 1;
+                                                                            saludImpostor = saludImpostor - dano;
+                                                                            System.out.println("Has golpeado al impostor");
+                                                                            System.out.println(ROJO + NEGRITA +"-"+dano + RESET);
+
+                                                                            break;
+                                                                    
+                                                                        case "2":
+                                                                            bloqueando = true;
+                                                                            System.out.println("*te proteges del siguiente golpe*");
+                                                                            break;
+                                                                        case "3":
+                                                                            if (refuerzosRestantes > 0) {
+                                                                                refuerzosRestantes = refuerzosRestantes - 1;
+                                                                                saludImpostor = 0;
+                                                                                System.out.println("*han llegado los refuerzos y han reducido al impostor*");
+                                                                            }else {
+                                                                                System.out.println("*no quedan refuerzos*");
+                                                                            }
+                                                                            break;
+                                                                        default:
+                                                                            System.out.println("Opción no válida, pierdes el turno");
+                                                                    }
+
+                                                                    //turno del impostor
+                                                                    if (saludImpostor>0) {
+                                                                        dano = (int) (Math.random()*DANO_MAX) + 1;
+                                                                        if (bloqueando) {
+                                                                            dano = dano/2; //te hace menos daño
+                                                                        }
+                                                                        saludPortero = saludPortero - dano;
+                                                                        System.out.println(ROJO+ "El impostor te ha golpeado "+ RESET);
+                                                                        System.out.println(ROJO + NEGRITA +"-"+dano + RESET);
+                                                                    }
+                                                    
+                                                                }
+                                                            //resultados
+                                                                if (saludPortero<=0) {
+                                                                    saludPortero = 0;
+                                                                    errores = errores + 1;
+                                                                    System.out.println(ROJO+ "El impostor te ha derrotado"+ RESET);
+                                                                    partidaTerminada = true;
+                                                                    puntos = puntos - PENALIZACION * errores;
+                                                                }else {
+                                                                    System.out.println(VERDE+ "Has reducido al impostor"+ RESET);
+                                                                    aciertos = aciertos +1;
+                                                                    decidido = true;
+                                                                    puntos = puntos + PUNTOS_ACIERTO;
+                                                                }
+                                                            break;
+                                                        }
+                                                    
+                                                    }else {
+                                                        System.out.println(ROJO + "Has fallado, "+ RESET +"era un residente");
+                                                        errores = errores + 1;
+                                                        puntos = puntos - PENALIZACION * errores;
+                                                        System.out.println(ROJO + "Errores: " + errores + "/" + MAX_ERRORES + RESET);
+                                                    }
+
+                                                }
+
+                                                if (errores==MAX_ERRORES) { //acaba partida
+                                                    System.out.println(ROJO+"HAS MUERTO"+RESET);
+                                                    partidaTerminada = true;
+                                                }
+                                                
+                                                break; 
+                                            default:
+                                            System.out.println("Elija una opción válida");
+                                            break;   
                                         }
+                                            
                                     
                                 }
 
-                            } while (opcion != 0 && opcion != 6);
+                            } while (!opcion.equals("0") && !decidido);
 
-                            if (opcion==6) {
-
-                                String decision;
-                                
-                                do {
-                                    
-                                    System.out.println("OPCIÓN A: Dejar pasar");
-                                    System.out.println("OPCIÓN B: Rechazar entrada");
-                                    System.out.println("Seleccione una opción: ");
-                                    decision = leer.readLine();
-                                    if (!decision.equalsIgnoreCase("A") && !decision.equalsIgnoreCase("B")) {
-                                        System.out.println(ROJO+ NEGRITA+ "Tome una decisión válida"+ RESET);
-                                    }
-
-                                } while (!decision.equalsIgnoreCase("A") && !decision.equalsIgnoreCase("B"));
-
-                                if (decision.equalsIgnoreCase("A")) { //le da igual mayusc. que minusc.
-                                    System.out.println("Has dejado pasar al visitante");
-                                    if (esImpostor) {
-                                        System.out.println(ROJO+ "Has fallado, "+ RESET+ "era un impostor");
-                                        errores = errores + 1;
-                                        puntos = puntos - PENALIZACION * errores; //penalización creciente
-                                        System.out.println(ROJO+ "Errores: "+ errores +"/3"+ RESET);
-                                        if (errores==3) {
-                                            System.out.println(ROJO+"HAS MUERTO");
-                                            opcion = 6;
-                                        }
-                                    }else {
-                                        System.out.println(VERDE+ "Has acertado, "+ RESET +"era un residente");
-                                        puntos = puntos + PUNTOS_ACIERTO;
-                                    }
-                                }else if (decision.equalsIgnoreCase("B")) {
-                                    if (esImpostor) {
-                                        System.out.println(VERDE+ "Has acertado, "+ RESET+ "era un impostor");
-                                        puntos = puntos + PUNTOS_ACIERTO;
-                                    }else {
-                                        System.out.println(ROJO+ "Has fallado, "+ RESET +"era un residente");
-                                        errores = errores + 1;
-                                        puntos = puntos - PENALIZACION * errores;
-                                        System.out.println(ROJO+ "Errores: "+ errores +"/3"+ RESET);
-                                    }
-
-                                    if (errores==MAX_ERRORES) { //acaba partida
-                                        System.out.println(ROJO+"HAS MUERTO"+RESET);
-                                        partidaTerminada = true;
-                                    }
-                                    
-                                }
-                                
-                            }else if (opcion == 0) {
+                            if (opcion.equals("0")) {
                                 System.out.println("Has abandonado la jornada");
                                 partidaTerminada = true; //corta el bucle de turnos
                             }
 
-                        }
+                        
                 }
 
                     //RESUMEN CON ESTADISTICAS
@@ -370,8 +427,9 @@ public class NotOnRecord {
                     
                     System.out.println("Puntos: "+ puntos);
                     System.out.println("Errores: "+ errores +"/"+ MAX_ERRORES);
-                    if (errores==MAX_ERRORES) {
-                        System.out.println("GAME OVER: Has cometido demasiados errores"+ RESET);
+                    System.out.println("Aciertos: "+ aciertos+"/"+ NUM_RESIDENTES);
+                    if (errores==MAX_ERRORES || saludPortero<=0 ) {
+                        System.out.println(ROJO+ NEGRITA+ "GAME OVER"+ RESET);
                     }else if (puntos>=400) {
                        System.out.println(VERDE+ "Valoración: EXPERTO"+ RESET); 
                     }else if (puntos>=200) {
@@ -382,17 +440,18 @@ public class NotOnRecord {
 
                     break;
                 }
-                case 2:
-                    System.out.println("Investiga a los visitantes, reúne pistas y decide si son impostores.");
+                case "2":
+                    System.out.println(CIAN + "Eres el portero de un edificio: investiga a cada visitante con las opciones del menú y decide si entra o es un impostor." + RESET);
+                    System.out.println(CIAN + "Acertar suma puntos, fallar suma un error y con " + MAX_ERRORES + " errores pierdes." + RESET);
                         break;
-                case 3:
+                case "3":
                     System.out.println("Saliendo del juego.");
                         break;
                 default:
                     System.out.println("Opción no válida.");
                     break;
             }
-        } while (opcionPrincipal != 3);
+        } while (!opcionPrincipal.equals("3"));
 
     }
 }
