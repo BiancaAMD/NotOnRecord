@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 <div align="center">
-=======
-# Not On Record
->>>>>>> 13b07c5523e83a40c58f98d4d5fb5cc80a5880d3
 
 # NOT ON RECORD
 
@@ -11,7 +7,7 @@
 ![Java](https://img.shields.io/badge/Java-17%2B-orange?logo=openjdk&logoColor=white)
 ![Plataforma](https://img.shields.io/badge/Plataforma-Consola-black?logo=windowsterminal&logoColor=white)
 ![Proyecto](https://img.shields.io/badge/Proyecto-1.%C2%BA%20DAW-blue)
-![Estado](https://img.shields.io/badge/Estado-En%20desarrollo-yellow)
+![Estado](https://img.shields.io/badge/Estado-1.%C2%AA%20evaluaci%C3%B3n%20completa-brightgreen)
 
 *Inspirado en **That's Not My Neighbor** y **Papers, Please***
 
@@ -21,65 +17,94 @@
 
 ## De qué va
 
-Eres el **conserje** de un edificio residencial. Durante una jornada van llegando visitantes que dicen vivir allí o tener motivos para entrar.
+Eres el **portero** de un edificio residencial. Durante una jornada van llegando visitantes que dicen vivir allí y te piden que les abras.
 
-Tu trabajo: **investigar quién es quién** y decidir si los dejas pasar, les denegas la entrada o avisas a seguridad.
+Tu trabajo: **investigar quién es quién** y decidir si los dejas pasar o los rechazas. Si rechazas a un impostor, puede huir… o atacarte.
 
-> ⚠️ No todo lo que parece sospechoso es culpable, ni todo el registro es fiable.
+> ⚠️ No todo lo que parece sospechoso es culpable: el visitante puede no entregar el documento y el conviviente puede no estar en casa.
 
 ---
 
 ## Cómo se juega
 
-Cada turno es un visitante nuevo:
+Al arrancar aparece un **menú principal**: `1. Empezar partida` · `2. Cómo jugar` · `3. Salir del juego`.
+
+Una partida son **5 turnos**, uno por visitante:
 
 ```mermaid
 flowchart LR
-    A[Llega un visitante] --> B[Declara nombre, piso y DNI]
-    B --> C{Investigas}
-    C -->|Registro| C
-    C -->|Pedir DNI| C
-    C -->|Preguntas| C
-    C -->|Interfono| C
-    C --> D{Decides}
-    D --> E[Permitir]
-    D --> F[Denegar]
-    D --> G[Avisar a seguridad]
-    E --> H[Puntos y errores]
-    F --> H
-    G --> H
+    A[Llega un visitante] --> B{Investigas}
+    B -->|1 Registro| B
+    B -->|2 Pedir documento| B
+    B -->|3 Llamar al apartamento| B
+    B -->|4 Decidir| D{Decisión}
+    B -->|0 Abandonar| Z[Resumen final]
+    D -->|A Dejar pasar| E[Acierto o error]
+    D -->|B Rechazar| F{¿Impostor?}
+    F -->|No| G[Error]
+    F -->|Sí| H{50 %}
+    H -->|Huye| E
+    H -->|Ataca| I[Duelo]
+    I --> E
+    E --> J[Siguiente turno]
+    G --> J
 ```
 
-1.**Llega un visitante** y declara su nombre, piso y DNI.
-2.**Investigas** desde el menú: consultar el registro, pedir el DNI, hacer preguntas o llamar por interfono.
-3.Cada acción puede revelar una **pista** (un dato que no cuadra).
-4.**Decides**: permitir, denegar o avisar a seguridad.
-5.El programa **compara tu decisión con la verdad** y actualiza puntos y errores.
+1. **Llega un visitante** y puede entregarte su documento por su cuenta (50 %), que se muestra en un recuadro tipo DNI.
+2. **Investigas** con el menú de cada turno.
+3. **Decides**: `A` dejar pasar o `B` rechazar la entrada.
+4. El programa **compara tu decisión con la verdad** y actualiza puntos, aciertos y errores.
 
-###Las pistas
+### Menú de cada turno
 
-El impostor suplanta a un residente del registro, y algo de lo que dice no cuadra. Estas son las pistas posibles:
+| Opción | Acción |
+|:-:|---|
+| **1** | Consultar el registro de residentes (nombre, piso, DNI y teléfono) |
+| **2** | Pedir el documento (solo una vez por turno) |
+| **3** | Llamar al apartamento (una llamada por turno) |
+| **4** | Tomar decisión |
+| **0** | Abandonar la jornada |
 
-| # | Pista | Cómo la descubres |
-|:-:|---|---|
-| 1 | El DNI no coincide con el del registro | Pidiendo el DNI |
-| 2 | El piso declarado es incorrecto | Consultando el registro |
-| 3 | Un conviviente no lo reconoce | Llamando por interfono |
-| 4 | El nombre no es el que figura en el registro | Consultando el registro |
-| 5 | No sabe con quién vive | Haciéndole preguntas |
+### Las pistas
 
-> ¡OJO! --> Hay pisos con varios residentes (pareja, madre e hija…). El teléfono es **del piso**, no de la persona: al llamar por interfono contesta quien esté en casa.
+El impostor suplanta a un residente del registro y **algo no cuadra**. Hay cuatro tipos:
+
+| Tipo de impostor | Cómo lo descubres |
+|---|---|
+| Nombre alterado (por ejemplo, `Fron Pardo`) | Comparando el documento con el registro |
+| Piso incorrecto | Comparando el documento con el registro |
+| DNI con una letra de más delante | Comparando el documento con el registro |
+| Documento **perfecto** | Llamando al apartamento: el conviviente dice que el residente **sí** está en casa, cuando un residente real estaría llamando a tu puerta |
+
+> ¡OJO! → Hay pisos con varios residentes (pareja, familia…). El teléfono es **del piso**, no de la persona: al llamar contesta el conviviente, y SOLO si está en casa. Si escribes un teléfono que no es el del piso, nadie contesta.
+
+### Decisiones
+
+| Decisión | Visitante | Resultado |
+|---|---|---|
+| **A.** Dejar pasar | Residente | ✅ Acierto |
+| **A.** Dejar pasar | Impostor | ❌ Error |
+| **B.** Rechazar | Residente | ❌ Error |
+| **B.** Rechazar | Impostor | ✅ Acierto: huye (50 %) o te ataca (50 %) y hay **duelo** |
+
+### El duelo
+
+Combate por turnos contra el impostor. Los dos empiezan con **100 de salud** (la tuya se mantiene entre duelos de la misma partida).
+
+| Acción | Efecto |
+|:-:|---|
+| **1. Atacar** | Daño aleatorio entre 1 y 50 |
+| **2. Bloquear ataque** | El siguiente golpe del impostor no te hace daño |
+| **3. Pedir refuerzos** | Reducen al impostor al instante. Solo **2** por partida |
+
+Si ganas, cuenta como acierto. Si pierdes, cuenta como error y **termina la partida**.
 
 ### Cómo se gana y se pierde
 
 | | Condición |
 |:-:|---|
-| **Ganas** | Terminas la jornada sin llegar al máximo de errores, con la mayor puntuación posible |
-| **Pierdes** | Cometes un total de **3 errores** |
-
-Cuenta como error:
-- Dejar pasar a un **impostor**.
-- Denegar la entrada a un **residente legítimo**.
+| **Ganas** | Terminas los turnos sin llegar al máximo de errores, con la mayor puntuación posible |
+| **Pierdes** | Cometes **3 errores** o el impostor te derrota en un duelo (`GAME OVER`) |
 
 ---
 
@@ -88,9 +113,15 @@ Cuenta como error:
 | Resultado | Efecto |
 |---|---|
 | ✅ Acierto | **+100** puntos |
-| ❌ Error | Penalización **-50** puntos, y **+1 error** |
+| ❌ Error | **+1 error** y penalización creciente: **-50 x nº de errores** (-50, -100, -150…) |
 
-Al final de la jornada se muestra tu **puntuación**.
+Al final de la jornada se muestran puntos, errores y aciertos, junto con una valoración:
+
+| Puntos | Valoración |
+|:-:|---|
+| 400 o más | **EXPERTO** |
+| 200 o más | **PROFESIONAL** |
+| menos de 200 | **NOVATO** |
 
 ---
 
@@ -99,7 +130,7 @@ Al final de la jornada se muestra tu **puntuación**.
 ```text
 NotOnRecord/
 ├── 📂 src/
-│   └── NotOnRecord.java   # Código fuente del juego
+│   └── NotOnRecord.java   # Código fuente del juego (todo en un único main)
 ├── 📂 lib/                   # Dependencias (esta versión no usa librerías externas)
 ├── 📂 bin/                   # Archivos compilados (se generan solos)
 ├── 📂 .vscode/
@@ -111,12 +142,13 @@ NotOnRecord/
 
 ---
 
-##Cómo ejecutarlo
+## Cómo ejecutarlo
 
 ### Requisitos
 
-- **JDK 17 o superior** (recomendado)
+- **JDK 17 o superior** (el código usa `"\s"`, que requiere Java 15+)
 - **VS Code** con el *Extension Pack for Java*
+- Un terminal compatible con colores ANSI
 
 ### Pasos
 
@@ -137,23 +169,32 @@ La vista `JAVA PROJECTS` de VS Code permite gestionar las dependencias. Más inf
 
 ---
 
+## Conceptos de la 1.ª evaluación aplicados
+
+- Variables, constantes (`final`, en MAYÚSCULAS) y operadores aritméticos, relacionales y lógicos.
+- Entrada con `BufferedReader` y salida con `println` / `printf`.
+- Estructuras de control: `if`, `switch`, `for`, `while` y `do-while`.
+- Arrays unidimensionales: registro en arrays paralelos, datos del visitante y letras para estropear el DNI, con recorrido, búsqueda, selección y actualización.
+
+---
+
 ## Plan de desarrollo
 
 | Evaluación | Contenido | Estado |
 |:-:|---|:-:|
-| **1.ª** | Versión por consola: variables, constantes, operadores, entrada/salida, estructuras de control y arrays unidimensionales | 🚧 En curso |
-| **2.ª** | Programación orientada a objetos: clases, herencia, polimorfismo y excepciones | ⏳ Pendiente |
-| **3.ª** | Colecciones, ficheros, base de datos y, si hay tiempo, interfaz gráfica | ⏳ Pendiente |
+| **1.ª** | Versión por consola: variables, constantes, operadores, entrada/salida, estructuras de control y arrays unidimensionales | ✅ Completa |
 
 ### Hoja de ruta de la 1.ª evaluación
 
 - [x] Generar un visitante a partir del registro de residentes
 - [x] Alterar un dato aleatorio del impostor para crear la pista
-- [x] Mostrar al visitante en pantalla
-- [ ] Menú de investigación (`do-while` + `switch`) con validación de opción
-- [ ] Decisión final y comparación con la verdad
-- [ ] Puntuación, errores y fin de partida
-- [ ] Colores ANSI en la consola
+- [x] Mostrar al visitante y su documento en pantalla
+- [x] Menú de investigación (`do-while` + `switch`) con validación de opción
+- [x] Llamada al apartamento con conviviente
+- [x] Decisión final y comparación con la verdad
+- [x] Duelo con salud, bloqueo y refuerzos
+- [x] Puntuación, errores y fin de partida
+- [x] Colores ANSI en la consola
 
 ---
 
