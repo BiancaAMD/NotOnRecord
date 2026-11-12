@@ -171,11 +171,10 @@ public class NotOnRecord {
 
                             //EN EL CASO DE QUE SEA IMPOSTOR: uno de los tres datos se altera o no
                             if (esImpostor) {
-                                int tipoImpostor = (int) (Math.random()*4); //esto lo que hace es dar 0, 1 , 2 o 3 , que son nuestros 3 datos que podemos alterar y la posibilidad de no alterar
-
+                                int tipoImpostor = (int) (Math.random()*4); //4 tipos: 0 nombre, 1 piso, 2 DNI, 3 documento perfecto
                                 //un impostor puede vivir solo, por lo que la llamada puede no ayudar, hacemos que tenga una pista si o si
                                 if (tipoImpostor==3 && posConviviente==-1) { 
-                                    tipoImpostor = (int)(Math.random()*3);
+                                    tipoImpostor = (int)(Math.random()*3); //3 tipos que alteran el documento (0, 1 o 2)
                                 }
 
                                 switch (tipoImpostor) { 
@@ -212,7 +211,7 @@ public class NotOnRecord {
                                 //==============TURNOS==================
                                 System.out.println("");
                                 System.out.println(NEGRITA +"TURNO "+ (contador+1) +RESET);
-                                System.out.println(NEGRITA + AZUL +"VISITANTE: "+ RESET+ "Buenos días señor portero, me abre por favor? "+ RESET);
+                                System.out.println(NEGRITA + AZUL +"VISITANTE: "+ RESET+ "Buenos días señor portero, ¿me abre por favor? "+ RESET);
                                 System.out.println(MAGENTA);
                                 switch ((int) (Math.random() * 2)) { //el visitante puede entregarnos el documento o no
                                     case 0:
@@ -285,7 +284,7 @@ public class NotOnRecord {
                                                         System.out.println(NEGRITA+ "+---------------------------------+" + RESET);
 
                                                     }else {
-                                                        System.out.println(NEGRITA+ AZUL+ "VISITANTE: "+RESET +"Pero.. Ya se lo he dado");
+                                                        System.out.println(NEGRITA+ AZUL+ "VISITANTE: "+RESET +"Pero... Ya se lo he dado");
                                                         System.out.println(MAGENTA+"*el visitante le señala el documento*");
                                                     }
                                                     break;
@@ -308,7 +307,7 @@ public class NotOnRecord {
                                                                 System.out.println(AZUL + NEGRITA + nombres[posConviviente] + ": " + RESET + "No, ha salido.");
                                                             }
                                                         } else {
-                                                            System.out.println("Sin respuesta");
+                                                            System.out.println("Nadie contesta");
                                                         }
                                                     } else {
                                                         System.out.println("Ya ha llamado");
@@ -351,7 +350,7 @@ public class NotOnRecord {
                                                     }else if (decision.equalsIgnoreCase("B")) {
                                                     decidido=true;
                                                         if (esImpostor) {
-                                                            System.out.println(CIAN + NEGRITA +"PORTERO: "+ RESET +"eres un impostor!!");
+                                                            System.out.println(CIAN + NEGRITA +"PORTERO: "+ RESET +"¡Eres un impostor!");
                                                             System.out.println("");
                                                 
                                                             switch ((int)(Math.random()*2)) {
@@ -468,10 +467,8 @@ public class NotOnRecord {
 
                                                     }
 
-                                                    if (errores==MAX_ERRORES) { //acaba partida
-                                                        System.out.println(ROJO+"HAS DEJADO ENTRAR A DEMASIADOS IMPOSTORES, TE HAN MATADO");
-                                                        saludPortero = 0;
-                                                        System.out.println("VIDA: "+ saludPortero + "/"+ SALUD_INICIAL+RESET);
+                                                    if (errores==MAX_ERRORES&&saludPortero>0) { //acaba partida
+                                                        System.out.println(ROJO+"HAS COMETIDO DEMASIADOS ERRORES"+RESET);
                                                         partidaTerminada = true;
                                                     }
                                                     
@@ -515,12 +512,30 @@ public class NotOnRecord {
                 }
                 
                 case "2":
-                    System.out.println(CIAN + "Eres el portero de un edificio: investiga a cada visitante con las opciones del menú y decide si entra o es un impostor." + RESET);
-                    System.out.println(CIAN + "Acertar suma puntos, fallar suma un error y con " + MAX_ERRORES + " errores pierdes." + RESET);
-                        break;
+                    System.out.println(CIAN + NEGRITA + "========== CÓMO JUGAR ==========" + RESET);
+                    System.out.println(CIAN + "Eres el portero de un edificio. Cada visitante dice vivir allí: investígalo y decide si entra o es un impostor." + RESET);
+                    System.out.println("");
+                    System.out.println(CIAN + NEGRITA + "En cada turno puedes:" + RESET);
+                    System.out.println(CIAN + "1. Consultar el registro de residentes y compararlo con lo que dice el visitante." + RESET);
+                    System.out.println(CIAN + "2. Pedir el documento, si no te lo ha entregado ya." + RESET);
+                    System.out.println(CIAN + "3. Llamar al apartamento (una vez por turno): si hay alguien en casa, te dirá si el residente está dentro." + RESET);
+                    System.out.println(CIAN + "4. Tomar una decisión: A (dejar pasar) o B (rechazar)." + RESET);
+                    System.out.println(CIAN + "0. Abandonar la jornada." + RESET);
+                    System.out.println("");
+                    System.out.println(CIAN + NEGRITA + "Reglas:" + RESET);
+                    System.out.println(CIAN + "- Acertar suma " + PUNTOS_ACIERTO + " puntos. Fallar suma un error y resta puntos de forma creciente." + RESET);
+                    System.out.println(CIAN + "- Fallas si dejas pasar a un impostor o rechazas a un residente. Con " + MAX_ERRORES + " errores pierdes la jornada." + RESET);
+                    System.out.println(CIAN + "- Un impostor puede falsificar algún dato del documento o presentar uno perfecto. Un mismo visitante puede volver a aparecer." + RESET);
+                    System.out.println(CIAN + "- Si rechazas a un impostor, puede huir o atacarte y empezará un duelo." + RESET);
+                    System.out.println(CIAN + NEGRITA + "Duelo:" + RESET);
+                    System.out.println(CIAN + "1. Atacar: haces un daño aleatorio al impostor." + RESET);
+                    System.out.println(CIAN + "2. Bloquear: no recibes daño en esa ronda, pero no puedes bloquear dos veces seguidas." + RESET);
+                    System.out.println(CIAN + "3. Pedir refuerzos: reducen al impostor al instante, pero solo tienes " + REFUERZOS_INICIALES + " por partida." + RESET);
+                    System.out.println(CIAN + "- Si tu salud llega a 0, pierdes el duelo y la partida. Cada duelo empieza con el impostor al máximo de salud, la tuya se conserva." + RESET);
+                    break;
                 case "3":
                     System.out.println("Saliendo del juego.");
-                        break;
+                    break;
                 default:
                     System.out.println(ROJO+ "Opción no válida"+ RESET);
                     break;
