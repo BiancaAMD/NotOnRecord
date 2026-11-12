@@ -385,6 +385,9 @@ public class NotOnRecord {
                                                                             case "1":
                                                                                 dano = (int) (Math.random()*DANO_MAX) + 1;
                                                                                 saludImpostor = saludImpostor - dano;
+                                                                                if (saludImpostor<0) {
+                                                                                    saludImpostor = 0;
+                                                                                }
                                                                                 System.out.println(CIAN+"*has golpeado al impostor*"+RESET);
                                                                                 System.out.println(ROJO + NEGRITA +"DAÑO INFLIGIDO: -"+dano + RESET);
 
@@ -394,6 +397,7 @@ public class NotOnRecord {
                                                                                 if (haBloqueadoAnterior==false) {
                                                                                    bloqueando = true;
                                                                                     System.out.println(MAGENTA+"*te proteges del siguiente golpe*"+RESET);
+                                                                                    System.out.println("");
                                                                                 }else {
                                                                                     bloqueando = false;
                                                                                     System.out.println(MAGENTA+"*no puedes bloquear dos veces seguidas, te atacan*"+RESET);
@@ -418,11 +422,15 @@ public class NotOnRecord {
                                                                         if (saludImpostor>0) {
                                                                             dano = (int) (Math.random()*DANO_MAX) + 1; //el daño es aleatorio, entre 1 y  50 de daño, y ponemos +1 para que el daño no sea 0
                                                                             if (bloqueando) { //no nos hacen daño
+                                                                                System.out.println(MAGENTA+"*has bloqueado el ataque del impostor*"+RESET);
                                                                                 haBloqueadoAnterior = true;
-                                                                                dano = 0;
+                                                                                
                                                                             }else{
                                                                                 haBloqueadoAnterior = false;
                                                                                 saludPortero = saludPortero - dano;
+                                                                                if (saludPortero<0) {
+                                                                                    saludPortero = 0;
+                                                                                }
                                                                                 System.out.println(ROJO+ "*el impostor te ha golpeado*"+ RESET);
                                                                                 System.out.println(ROJO + NEGRITA +"DAÑO RECIBIDO: -"+dano + RESET);
                                                                             }
@@ -461,7 +469,9 @@ public class NotOnRecord {
                                                     }
 
                                                     if (errores==MAX_ERRORES) { //acaba partida
-                                                        System.out.println(ROJO+"HAS MUERTO"+RESET);
+                                                        System.out.println(ROJO+"HAS DEJADO ENTRAR A DEMASIADOS IMPOSTORES, TE HAN MATADO");
+                                                        saludPortero = 0;
+                                                        System.out.println("VIDA: "+ saludPortero + "/"+ SALUD_INICIAL+RESET);
                                                         partidaTerminada = true;
                                                     }
                                                     
