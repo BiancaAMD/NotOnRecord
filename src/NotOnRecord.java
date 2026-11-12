@@ -49,7 +49,7 @@ public class NotOnRecord {
         int refuerzosRestantes;
         String accionDuelo;
         boolean haBloqueadoAnterior; // evitar que se bloquee sin límite
-        final int REFUERZOS_INICIALES = 2;
+        final int REFUERZOS_INICIALES = 1;
         final int SALUD_INICIAL = 100;
         final int DANO_MAX = 50; //daño max que se puede hacer
 
