@@ -24,7 +24,6 @@ public class NotOnRecord {
         final int PENALIZACION     = 50;  
 
         // ========================== VARIABLES ===========================
-        //empleados por el usuario
         String numeroTelefono;
 
         // Estado de la partida
@@ -32,9 +31,9 @@ public class NotOnRecord {
         int errores;
         int aciertos;
 
-        // Visitante actual
-        int posResidente, posConviviente;          // posición del residente del que cogemos datos (0 a NUM_RESIDENTES - 1) y saber si en el piso hay alguien más
-        boolean esImpostor;        // si es impostor o no
+        // Visitante actual - todas estas variables cambian su valor en cada turno
+        int posResidente, posConviviente;  // posición del residente del que cogemos datos (0 a NUM_RESIDENTES - 1) y saber si en el piso hay alguien más
+        boolean esImpostor;        // si es impostor o no, se reinicia 
         boolean convivienteEnCasa; // indica si el conviviente está en casa
         boolean documentoEntregado;
         boolean llamadaRealizada;
@@ -44,8 +43,13 @@ public class NotOnRecord {
         boolean decidido;         // true cuando se da el veredicto y acaba el turno
 
         //=========DUELO============
-        int saludPortero, saludImpostor, dano, refuerzosRestantes;
+        int saludPortero;
+        int saludImpostor;
+        int dano;
+        int refuerzosRestantes;
         String accionDuelo;
+        boolean haBloqueadoAnterior; // evitar que se bloquee sin límite
+        final int REFUERZOS_INICIALES = 2;
         final int SALUD_INICIAL = 100;
         final int DANO_MAX = 50; //daño max que se puede hacer
 
@@ -130,7 +134,7 @@ public class NotOnRecord {
                         aciertos = 0;
                         saludPortero = SALUD_INICIAL;
                         boolean partidaTerminada = false;
-                        refuerzosRestantes = 2; 
+                        refuerzosRestantes = REFUERZOS_INICIALES; 
                         
 
                         //============JUEGO================
@@ -149,7 +153,7 @@ public class NotOnRecord {
                             documentoEntregado = false;
             
 
-                            //RELLENAMOS LOS DATOS QUE EL VISITANTE NOS VA A DAR, LO COPIAMOS DEL REGISTRO DE LA POSICION DE RESIDENTE QUE HEMOS RECOGIDO ANTES
+                            //RELLENAMOS DATOS VISITANTE, COPIAMOS DEL REGISTRO 
                             //NOTA: [0] es nombre, [1] es piso y [2] es DNI
                             datosDeclarados[0] = nombres[posResidente];
                             datosDeclarados[1] = pisos[posResidente];
@@ -191,7 +195,7 @@ public class NotOnRecord {
                                     break;
                                         
                                     case 2:
-                                        int posicionLetraRandom = (int)(Math.random()*7);
+                                        int posicionLetraRandom = (int)(Math.random()*abecedario.length);
                                         datosDeclarados[2] = abecedario[posicionLetraRandom]+ dnis[posResidente];
                                         break;
 
@@ -346,9 +350,10 @@ public class NotOnRecord {
 
                                                     }else if (decision.equalsIgnoreCase("B")) {
                                                     decidido=true;
-                                                    System.out.println(CIAN + NEGRITA +"PORTERO: "+ RESET +"eres un impostor!!");
-                                                    System.out.println("");
                                                         if (esImpostor) {
+                                                            System.out.println(CIAN + NEGRITA +"PORTERO: "+ RESET +"eres un impostor!!");
+                                                            System.out.println("");
+                                                
                                                             switch ((int)(Math.random()*2)) {
                                                                 case 0: //huye
                                                                     System.out.println(MAGENTA+ "*EL IMPOSTOR HA SALIDO CORRIENDO*"+ RESET);
@@ -360,10 +365,13 @@ public class NotOnRecord {
                                                             
                                                                 case 1: //ataca
                                                                     saludImpostor = SALUD_INICIAL;
+                                                                    haBloqueadoAnterior = false;
 
                                                                     System.out.println(ROJO+NEGRITA +"*EL IMPOSTOR TE ESTÁ ATACANDO*"+ RESET);
                                                                     while (saludPortero>0 && saludImpostor>0) {
+
                                                                         boolean bloqueando = false;
+
                                                                         System.out.println("VIDA: "+ saludPortero + "/"+ SALUD_INICIAL + " | VIDA IMPOSTOR: " + saludImpostor +"/"+ SALUD_INICIAL);
                                                                         System.out.println("");
                                                                         System.out.println("1. Atacar");
@@ -383,9 +391,16 @@ public class NotOnRecord {
                                                                                 break;
                                                                         
                                                                             case "2":
-                                                                                bloqueando = true;
-                                                                                System.out.println("*te proteges del siguiente golpe*");
-                                                                                break;
+                                                                                if (haBloqueadoAnterior==false) {
+                                                                                   bloqueando = true;
+                                                                                    System.out.println(MAGENTA+"*te proteges del siguiente golpe*"+RESET);
+                                                                                }else {
+                                                                                    bloqueando = false;
+                                                                                    System.out.println(MAGENTA+"*no puedes bloquear dos veces seguidas, te atacan*"+RESET);
+                                                                                    
+                                                                                }
+                                                                                break; 
+                                                                 
                                                                             case "3":
                                                                                 if (refuerzosRestantes > 0) {
                                                                                     refuerzosRestantes = refuerzosRestantes - 1; //los refuerzos van disminuyendo, son limitados
@@ -401,20 +416,27 @@ public class NotOnRecord {
 
                                                                         //turno del impostor
                                                                         if (saludImpostor>0) {
-                                                                            dano = (int) (Math.random()*DANO_MAX) + 1; //el daño es aleatorio, entre 0 y  50 de daño, y ponemos +1 para que el daño no sea 0
+                                                                            dano = (int) (Math.random()*DANO_MAX) + 1; //el daño es aleatorio, entre 1 y  50 de daño, y ponemos +1 para que el daño no sea 0
                                                                             if (bloqueando) { //no nos hacen daño
+                                                                                haBloqueadoAnterior = true;
                                                                                 dano = 0;
+                                                                            }else{
+                                                                                haBloqueadoAnterior = false;
+                                                                                saludPortero = saludPortero - dano;
+                                                                                System.out.println(ROJO+ "*el impostor te ha golpeado*"+ RESET);
+                                                                                System.out.println(ROJO + NEGRITA +"DAÑO RECIBIDO: -"+dano + RESET);
                                                                             }
-                                                                            saludPortero = saludPortero - dano;
-                                                                            System.out.println(ROJO+ "*el impostor te ha golpeado*"+ RESET);
-                                                                            System.out.println(ROJO + NEGRITA +"DAÑO RECIBIDO: -"+dano + RESET);
+                                                                            
                                                                         }
-                                                        
+
+                                                                        haBloqueadoAnterior = bloqueando;
+                                                                        
                                                                     }
                                                                 //resultados
                                                                     if (saludPortero<=0) {
                                                                         saludPortero = 0;
                                                                         errores = errores + 1; //como nos han derrotado, el impostor puede entrar 
+                                                                        System.out.println("");
                                                                         System.out.println(ROJO+ "El impostor te ha derrotado"+ RESET);
                                                                         partidaTerminada = true;
                                                                         puntos = puntos - PENALIZACION * errores;
@@ -428,6 +450,8 @@ public class NotOnRecord {
                                                             }
                                                         
                                                         }else {
+                                                            System.out.println(CIAN + NEGRITA +"PORTERO: "+ RESET +"Lo siento, no puede pasar");
+                                                            System.out.println("");
                                                             System.out.println(ROJO + "Has fallado, "+ RESET +"era un residente");
                                                             errores = errores + 1;
                                                             puntos = puntos - PENALIZACION * errores; //la penalización es creciente
